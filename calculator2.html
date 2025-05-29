@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Personal Finance Manager</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    input[type='number'] {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .summary h2 {
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Personal Finance Manager</h1>
+
+  <div class="card">
+    <h2>Add Income</h2>
+    <div class="input-group">
+      <input type="number" id="incomeInput" placeholder="Enter income" />
+      <button onclick="addIncome()">Add</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Add Expense</h2>
+    <div class="input-group">
+      <input type="number" id="expenseInput" placeholder="Enter expense" />
+      <button onclick="addExpense()">Add</button>
+    </div>
+  </div>
+
+  <div class="card summary">
+    <h2>Total Income: ₹<span id="totalIncome">0.00</span></h2>
+    <h2>Total Expense: ₹<span id="totalExpense">0.00</span></h2>
+    <h2>Savings: ₹<span id="savings">0.00</span></h2>
+  </div>
+
+  <script>
+    let totalIncome = 0;
+    let totalExpense = 0;
+
+    function addIncome() {
+      const input = document.getElementById("incomeInput");
+      const value = parseFloat(input.value);
+      if (!isNaN(value)) {
+        totalIncome += value;
+        input.value = "";
+        updateDisplay();
+      }
+    }
+
+    function addExpense() {
+      const input = document.getElementById("expenseInput");
+      const value = parseFloat(input.value);
+      if (!isNaN(value)) {
+        totalExpense += value;
+        input.value = "";
+        updateDisplay();
+      }
+    }
+
+    function updateDisplay() {
+      document.getElementById("totalIncome").textContent = totalIncome.toFixed(2);
+      document.getElementById("totalExpense").textContent = totalExpense.toFixed(2);
+      document.getElementById("savings").textContent = (totalIncome - totalExpense).toFixed(2);
+    }
+  </script>
+
+</body>
+</html>
+<?php
+header("Content-Type: application/json");
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, GET");
+
+$host = "localhost";
+$db = "finance_manager";
+$user = "root";
+$pass = ""; // Change if you use a password
+$conn = new mysqli($host, $user, $pass, $db);
+
+if ($conn->connect_error) {
+  http_response_code(500);
+  echo json_encode(["error" => "Database connection failed"]);
+  exit();
+}
+
+$method = $_SERVER['REQUEST_METHOD'];
+
+if ($method === "POST") {
+  $input = json_decode(file_get_contents("php://input"), true);
+  $type = $input['type'];
+  $amount = floatval($input['amount']);
+
+  if (in_array($type, ['income', 'expense']) && $amount > 0) {
+    $stmt = $conn->prepare("INSERT INTO transactions (type, amount) VALUES (?, ?)");
+    $stmt->bind_param("sd", $type, $amount);
+    $stmt->execute();
+    echo json_encode(["success" => true]);
+  } else {
+    http_response_code(400);
+    echo json_encode(["error" => "Invalid input"]);
+  }
+
+} elseif ($method === "GET") {
+  $result = $conn->query("
+    SELECT 
+      SUM(CASE WHEN type='income' THEN amount ELSE 0 END) AS total_income,
+      SUM(CASE WHEN type='expense' THEN amount ELSE 0 END) AS total_expense
+    FROM transactions
+  ");
+  $data = $result->fetch_assoc();
+  $data['savings'] = $data['total_income'] - $data['total_expense'];
+  echo json_encode($data);
+
+} else {
+  http_response_code(405);
+  echo json_encode(["error" => "Method not allowed"]);
+}
+
+$conn->close();
+?>
+<script>
+async function fetchSummary() {
+  const res = await fetch('api.php');
+  const data = await res.json();
+  document.getElementById("totalIncome").textContent = parseFloat(data.total_income).toFixed(2);
+  document.getElementById("totalExpense").textContent = parseFloat(data.total_expense).toFixed(2);
+  document.getElementById("savings").textContent = parseFloat(data.savings).toFixed(2);
+}
+
+async function addTransaction(type) {
+  const inputId = type === "income" ? "incomeInput" : "expenseInput";
+  const input = document.getElementById(inputId);
+  const amount = parseFloat(input.value);
+
+  if (!isNaN(amount) && amount > 0) {
+    await fetch('api.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, amount })
+    });
+    input.value = "";
+    fetchSummary();
+  }
+}
+
+function addIncome() {
+  addTransaction('income');
+}
+
+function addExpense() {
+  addTransaction('expense');
+}
+
+// Load summary on page load
+window.onload = fetchSummary;
+</script>
