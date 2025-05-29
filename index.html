@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Personal Finance Manager</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    input[type='number'] {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .summary h2 {
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Personal Finance Manager</h1>
+
+  <div class="card">
+    <h2>Add Income</h2>
+    <div class="input-group">
+      <input type="number" id="incomeInput" placeholder="Enter income" />
+      <button onclick="addIncome()">Add</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Add Expense</h2>
+    <div class="input-group">
+      <input type="number" id="expenseInput" placeholder="Enter expense" />
+      <button onclick="addExpense()">Add</button>
+    </div>
+  </div>
+
+  <div class="card summary">
+    <h2>Total Income: ₹<span id="totalIncome">0.00</span></h2>
+    <h2>Total Expense: ₹<span id="totalExpense">0.00</span></h2>
+    <h2>Savings: ₹<span id="savings">0.00</span></h2>
+  </div>
+
+  <script>
+    let totalIncome = 0;
+    let totalExpense = 0;
+
+    function addIncome() {
+      const input = document.getElementById("incomeInput");
+      const value = parseFloat(input.value);
+      if (!isNaN(value)) {
+        totalIncome += value;
+        input.value = "";
+        updateDisplay();
+      }
+    }
+
+    function addExpense() {
+      const input = document.getElementById("expenseInput");
+      const value = parseFloat(input.value);
+      if (!isNaN(value)) {
+        totalExpense += value;
+        input.value = "";
+        updateDisplay();
+      }
+    }
+
+    function updateDisplay() {
+      document.getElementById("totalIncome").textContent = totalIncome.toFixed(2);
+      document.getElementById("totalExpense").textContent = totalExpense.toFixed(2);
+      document.getElementById("savings").textContent = (totalIncome - totalExpense).toFixed(2);
+    }
+  </script>
+
+</body>
+</html>
